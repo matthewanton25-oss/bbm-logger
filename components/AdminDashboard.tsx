@@ -308,34 +308,48 @@ function NamesTab({ entity, label }: { entity: "captains" | "boats"; label: stri
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/${entity}`);
-    const data = await res.json();
-    setItems(Array.isArray(data) ? data : []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/${entity}`);
+      const data = await res.json();
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
+      setError("Gagal memuat daftar. Cek koneksi internet.");
+    } finally {
+      setLoading(false);
+    }
   }, [entity]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   async function add() {
-    if (!newName.trim()) return;
+    const trimmed = newName.trim();
+    if (!trimmed) return;
     setSaving(true);
     setError("");
-    const res = await fetch(`/api/${entity}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName.trim() }),
-    });
-    if (res.ok) {
-      setNewName("");
-      fetchItems();
-    } else {
-      const d = await res.json();
-      setError(d.error ?? "Gagal menambahkan");
+    setSuccess("");
+    try {
+      const res = await fetch(`/api/${entity}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNewName("");
+        setSuccess(`"${trimmed}" berhasil ditambahkan!`);
+        await fetchItems();
+      } else {
+        setError(data.error ?? "Gagal menambahkan. Coba lagi.");
+      }
+    } catch {
+      setError("Gagal terhubung ke server. Cek koneksi internet.");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   async function remove(id: string, name: string) {
@@ -365,7 +379,8 @@ function NamesTab({ entity, label }: { entity: "captains" | "boats"; label: stri
             {saving ? "…" : "Tambah"}
           </button>
         </div>
-        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        {error && <p className="text-red-500 text-sm mt-2">❌ {error}</p>}
+        {success && <p className="text-green-600 text-sm mt-2">✅ {success}</p>}
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
