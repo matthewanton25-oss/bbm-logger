@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { CAPTAIN_NAMES, BOAT_NAMES } from "@/lib/constants";
+import { useState, useEffect } from "react";
 import { toLocalDatetimeValue } from "@/lib/utils";
 
 type FormState = {
@@ -35,6 +34,13 @@ export default function FuelLogForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [captains, setCaptains] = useState<string[]>([]);
+  const [boats, setBoats] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/captains").then(r => r.json()).then(d => setCaptains(d.map((c: {name: string}) => c.name)));
+    fetch("/api/boats").then(r => r.json()).then(d => setBoats(d.map((b: {name: string}) => b.name)));
+  }, []);
 
   function set(key: keyof FormState, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -141,9 +147,10 @@ export default function FuelLogForm() {
           className="w-full border border-gray-300 rounded-xl px-4 py-4 text-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">-- Pilih Kapten --</option>
-          {CAPTAIN_NAMES.map((n) => (
+          {captains.map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
+          <option value="Other">Lainnya...</option>
         </select>
         {form.captainName === "Other" && (
           <input
@@ -170,7 +177,7 @@ export default function FuelLogForm() {
           className="w-full border border-gray-300 rounded-xl px-4 py-4 text-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">-- Pilih Kapal --</option>
-          {BOAT_NAMES.map((n) => (
+          {boats.map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
         </select>

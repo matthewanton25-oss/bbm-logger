@@ -18,47 +18,71 @@ create table if not exists public.fuel_logs (
   created_at      timestamptz not null default now()
 );
 
--- 2. Enable Row Level Security
+-- 2. Captains list
+create table if not exists public.captains (
+  id    uuid primary key default gen_random_uuid(),
+  name  text not null unique
+);
+
+-- 3. Boats list
+create table if not exists public.boats (
+  id    uuid primary key default gen_random_uuid(),
+  name  text not null unique
+);
+
+-- 4. Seed default captains
+insert into public.captains (name) values
+  ('Budi Santoso'), ('Agus Wijaya'), ('Rudi Hartono'),
+  ('Hendra Kusuma'), ('Dedi Prasetyo'), ('Eko Setiawan'),
+  ('Bambang Suryadi'), ('Joko Purnomo'), ('Slamet Rahardjo'),
+  ('Wahyu Nugroho')
+on conflict (name) do nothing;
+
+-- 5. Seed default boats
+insert into public.boats (name) values
+  ('KM Rajawali'), ('KM Garuda'), ('KM Elang'),
+  ('KM Nusantara'), ('KM Bahari'), ('KM Samudra'),
+  ('KM Cakrawala'), ('KM Merpati'), ('KM Pelita'),
+  ('KM Bintang Laut')
+on conflict (name) do nothing;
+
+-- 6. Enable RLS on all tables
 alter table public.fuel_logs enable row level security;
+alter table public.captains enable row level security;
+alter table public.boats enable row level security;
 
--- 3. RLS Policies
---    Anyone (including unauthenticated) can INSERT (captains in the field)
-create policy "Public insert"
-  on public.fuel_logs
-  for insert
-  to anon
-  with check (true);
+-- 7. RLS Policies for fuel_logs
+create policy "Public insert fuel_logs"
+  on public.fuel_logs for insert to anon with check (true);
+create policy "Public select fuel_logs"
+  on public.fuel_logs for select to anon using (true);
+create policy "Public delete fuel_logs"
+  on public.fuel_logs for delete to anon using (true);
 
---    Only authenticated users (service role / server-side) can SELECT
---    The admin dashboard reads via the server API route which uses the anon key
---    but is protected by our middleware cookie check.
---    Simplest approach: allow anon SELECT too (the middleware is our gate).
-create policy "Public select"
-  on public.fuel_logs
-  for select
-  to anon
-  using (true);
+-- 8. RLS Policies for captains
+create policy "Public select captains"
+  on public.captains for select to anon using (true);
+create policy "Public insert captains"
+  on public.captains for insert to anon with check (true);
+create policy "Public delete captains"
+  on public.captains for delete to anon using (true);
 
--- 4. Storage bucket for photos
---    Run this in the Supabase Dashboard → Storage → New Bucket
---    OR via the SQL below (works in recent Supabase versions):
+-- 9. RLS Policies for boats
+create policy "Public select boats"
+  on public.boats for select to anon using (true);
+create policy "Public insert boats"
+  on public.boats for insert to anon with check (true);
+create policy "Public delete boats"
+  on public.boats for delete to anon using (true);
+
+-- 10. Storage bucket for photos
 insert into storage.buckets (id, name, public)
 values ('fuel-photos', 'fuel-photos', true)
 on conflict (id) do nothing;
 
--- 5. Storage RLS policies
---    Allow anyone to upload (INSERT) to the bucket
 create policy "Public upload fuel photos"
-  on storage.objects
-  for insert
-  to anon
+  on storage.objects for insert to anon
   with check (bucket_id = 'fuel-photos');
-
---    Allow anyone to read (SELECT) from the bucket (public bucket)
 create policy "Public read fuel photos"
-  on storage.objects
-  for select
-  to anon
+  on storage.objects for select to anon
   using (bucket_id = 'fuel-photos');
-
--- Done! Your Supabase project is ready.
