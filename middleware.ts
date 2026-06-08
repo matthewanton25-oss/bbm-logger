@@ -6,7 +6,8 @@ function isAuthed(request: NextRequest) {
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname, method } = request;
+  const { pathname } = request.nextUrl;
+  const { method } = request;
 
   // GET /api/logs → admin only
   if (pathname === "/api/logs" && method === "GET") {
