@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { FuelLog } from "@/lib/supabase";
-import { formatIDR, formatDate, exportToCSV } from "@/lib/utils";
+import { formatDate, exportToCSV } from "@/lib/utils";
 import { BOAT_NAMES, CAPTAIN_NAMES } from "@/lib/constants";
 
 type Filters = { boat: string; captain: string; from: string; to: string };
@@ -99,19 +99,14 @@ function LogsTab() {
   });
 
   const totalLiters = logs.reduce((s, l) => s + Number(l.liters), 0);
-  const totalCost = logs.reduce((s, l) => s + Number(l.cost_idr), 0);
 
-  const byBoat = logs.reduce<Record<string, { liters: number; cost: number }>>((acc, l) => {
-    if (!acc[l.boat_name]) acc[l.boat_name] = { liters: 0, cost: 0 };
-    acc[l.boat_name].liters += Number(l.liters);
-    acc[l.boat_name].cost += Number(l.cost_idr);
+  const byBoat = logs.reduce<Record<string, number>>((acc, l) => {
+    acc[l.boat_name] = (acc[l.boat_name] ?? 0) + Number(l.liters);
     return acc;
   }, {});
 
-  const byCaptain = logs.reduce<Record<string, { liters: number; cost: number }>>((acc, l) => {
-    if (!acc[l.captain_name]) acc[l.captain_name] = { liters: 0, cost: 0 };
-    acc[l.captain_name].liters += Number(l.liters);
-    acc[l.captain_name].cost += Number(l.cost_idr);
+  const byCaptain = logs.reduce<Record<string, number>>((acc, l) => {
+    acc[l.captain_name] = (acc[l.captain_name] ?? 0) + Number(l.liters);
     return acc;
   }, {});
 
@@ -123,7 +118,6 @@ function LogsTab() {
       "Pelabuhan Asal": l.route.split(" → ")[0] ?? l.route,
       "Pelabuhan Tujuan": l.route.split(" → ")[1] ?? "",
       "Volume (L)": l.liters,
-      "Biaya (IDR)": l.cost_idr,
       Catatan: l.notes ?? "",
     }));
     exportToCSV(rows as unknown as Record<string, unknown>[], `bbm-logs-${Date.now()}.csv`);
@@ -172,15 +166,11 @@ function LogsTab() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="bg-blue-600 text-white rounded-2xl p-4 shadow">
           <p className="text-xs font-medium opacity-80">Total Volume</p>
           <p className="text-2xl font-bold mt-1">{totalLiters.toLocaleString("id-ID", { maximumFractionDigits: 1 })}</p>
           <p className="text-xs opacity-70">liter</p>
-        </div>
-        <div className="bg-emerald-600 text-white rounded-2xl p-4 shadow">
-          <p className="text-xs font-medium opacity-80">Total Biaya</p>
-          <p className="text-lg font-bold mt-1 leading-tight">{formatIDR(totalCost)}</p>
         </div>
         <div className="bg-violet-600 text-white rounded-2xl p-4 shadow">
           <p className="text-xs font-medium opacity-80">Jumlah Trip</p>
@@ -197,17 +187,15 @@ function LogsTab() {
             <thead className="bg-gray-50 text-gray-500"><tr>
               <th className="text-left px-4 py-2">Kapal</th>
               <th className="text-right px-4 py-2">Liter</th>
-              <th className="text-right px-4 py-2">Biaya</th>
             </tr></thead>
             <tbody>
-              {Object.entries(byBoat).map(([boat, v]) => (
+              {Object.entries(byBoat).map(([boat, liters]) => (
                 <tr key={boat} className="border-t border-gray-50">
                   <td className="px-4 py-2 font-medium">{boat}</td>
-                  <td className="px-4 py-2 text-right">{v.liters.toLocaleString("id-ID", { maximumFractionDigits: 1 })}</td>
-                  <td className="px-4 py-2 text-right text-xs">{formatIDR(v.cost)}</td>
+                  <td className="px-4 py-2 text-right">{liters.toLocaleString("id-ID", { maximumFractionDigits: 1 })}</td>
                 </tr>
               ))}
-              {!Object.keys(byBoat).length && <tr><td colSpan={3} className="px-4 py-4 text-gray-400 text-center">Tidak ada data</td></tr>}
+              {!Object.keys(byBoat).length && <tr><td colSpan={2} className="px-4 py-4 text-gray-400 text-center">Tidak ada data</td></tr>}
             </tbody>
           </table>
         </div>
@@ -217,17 +205,15 @@ function LogsTab() {
             <thead className="bg-gray-50 text-gray-500"><tr>
               <th className="text-left px-4 py-2">Kapten</th>
               <th className="text-right px-4 py-2">Liter</th>
-              <th className="text-right px-4 py-2">Biaya</th>
             </tr></thead>
             <tbody>
-              {Object.entries(byCaptain).map(([cap, v]) => (
+              {Object.entries(byCaptain).map(([cap, liters]) => (
                 <tr key={cap} className="border-t border-gray-50">
                   <td className="px-4 py-2 font-medium">{cap}</td>
-                  <td className="px-4 py-2 text-right">{v.liters.toLocaleString("id-ID", { maximumFractionDigits: 1 })}</td>
-                  <td className="px-4 py-2 text-right text-xs">{formatIDR(v.cost)}</td>
+                  <td className="px-4 py-2 text-right">{liters.toLocaleString("id-ID", { maximumFractionDigits: 1 })}</td>
                 </tr>
               ))}
-              {!Object.keys(byCaptain).length && <tr><td colSpan={3} className="px-4 py-4 text-gray-400 text-center">Tidak ada data</td></tr>}
+              {!Object.keys(byCaptain).length && <tr><td colSpan={2} className="px-4 py-4 text-gray-400 text-center">Tidak ada data</td></tr>}
             </tbody>
           </table>
         </div>
@@ -265,7 +251,6 @@ function LogsTab() {
                   <th className="text-left px-4 py-3">Asal</th>
                   <th className="text-left px-4 py-3">Tujuan</th>
                   <th className="text-right px-4 py-3">Liter</th>
-                  <th className="text-right px-4 py-3">Biaya (IDR)</th>
                   <th className="text-left px-4 py-3">Catatan</th>
                   <th className="px-4 py-3"></th>
                 </tr>
@@ -279,7 +264,6 @@ function LogsTab() {
                     <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate">{log.route.split(" → ")[0] ?? log.route}</td>
                     <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate">{log.route.split(" → ")[1] ?? "—"}</td>
                     <td className="px-4 py-3 text-right font-mono">{Number(log.liters).toLocaleString("id-ID", { maximumFractionDigits: 1 })}</td>
-                    <td className="px-4 py-3 text-right font-mono text-xs">{formatIDR(Number(log.cost_idr))}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs max-w-[120px] truncate">{log.notes ?? "—"}</td>
                     <td className="px-4 py-3">
                       <button

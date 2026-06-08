@@ -11,7 +11,6 @@ type FormState = {
   arrivalPort: string;
   loggedAt: string;
   liters: string;
-  costIdr: string;
   notes: string;
 };
 
@@ -24,7 +23,6 @@ function freshForm(): FormState {
     arrivalPort: "",
     loggedAt: toLocalDatetimeValue(new Date()),
     liters: "",
-    costIdr: "",
     notes: "",
   };
 }
@@ -47,16 +45,9 @@ export default function FuelLogForm() {
     setErrors((e) => ({ ...e, [key]: "" }));
   }
 
-  function formatCostDisplay(raw: string) {
-    const digits = raw.replace(/\D/g, "");
-    if (!digits) return "";
-    return Number(digits).toLocaleString("id-ID");
-  }
-
   function validate() {
     const e: Record<string, string> = {};
-    const captain =
-      form.captainName === "Other" ? form.captainOther.trim() : form.captainName;
+    const captain = form.captainName === "Other" ? form.captainOther.trim() : form.captainName;
     if (!captain) e.captainName = "Nama kapten wajib diisi";
     if (!form.boatName) e.boatName = "Nama kapal wajib diisi";
     if (!form.departPort.trim()) e.departPort = "Pelabuhan asal wajib diisi";
@@ -64,8 +55,6 @@ export default function FuelLogForm() {
     if (!form.loggedAt) e.loggedAt = "Tanggal & waktu wajib diisi";
     if (!form.liters || isNaN(Number(form.liters)) || Number(form.liters) <= 0)
       e.liters = "Masukkan volume BBM yang valid";
-    const costDigits = form.costIdr.replace(/\D/g, "");
-    if (!costDigits || Number(costDigits) <= 0) e.costIdr = "Masukkan biaya yang valid";
     return e;
   }
 
@@ -74,16 +63,13 @@ export default function FuelLogForm() {
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
-      const firstErr = document.querySelector("[data-error]");
-      firstErr?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.querySelector("[data-error]")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
     setSubmitting(true);
     try {
-      const captain =
-        form.captainName === "Other" ? form.captainOther.trim() : form.captainName;
-
+      const captain = form.captainName === "Other" ? form.captainOther.trim() : form.captainName;
       const route = `${form.departPort.trim()} → ${form.arrivalPort.trim()}`;
 
       await fetch("/api/logs", {
@@ -95,7 +81,7 @@ export default function FuelLogForm() {
           route,
           logged_at: new Date(form.loggedAt).toISOString(),
           liters: Number(form.liters),
-          cost_idr: Number(form.costIdr.replace(/\D/g, "")),
+          cost_idr: 0,
           notes: form.notes.trim() || null,
         }),
       });
@@ -120,9 +106,7 @@ export default function FuelLogForm() {
       <div className="min-h-screen bg-green-50 flex flex-col items-center justify-center px-6 text-center gap-6">
         <div className="text-7xl">✅</div>
         <h2 className="text-2xl font-bold text-green-700">Berhasil Tersimpan!</h2>
-        <p className="text-green-600 text-lg">
-          Data BBM berhasil dicatat. Terima kasih, Kapten!
-        </p>
+        <p className="text-green-600 text-lg">Data BBM berhasil dicatat. Terima kasih, Kapten!</p>
         <button
           onClick={reset}
           className="mt-4 bg-green-600 text-white text-lg font-semibold px-8 py-4 rounded-2xl active:bg-green-700 transition-colors shadow-lg"
@@ -147,9 +131,7 @@ export default function FuelLogForm() {
           className="w-full border border-gray-300 rounded-xl px-4 py-4 text-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">-- Pilih Kapten --</option>
-          {captains.map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
+          {captains.map((n) => <option key={n} value={n}>{n}</option>)}
           <option value="Other">Lainnya...</option>
         </select>
         {form.captainName === "Other" && (
@@ -161,9 +143,7 @@ export default function FuelLogForm() {
             className="mt-3 w-full border border-gray-300 rounded-xl px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         )}
-        {errors.captainName && (
-          <p data-error className="text-red-500 text-sm mt-1">{errors.captainName}</p>
-        )}
+        {errors.captainName && <p data-error className="text-red-500 text-sm mt-1">{errors.captainName}</p>}
       </div>
 
       {/* Boat Name */}
@@ -177,16 +157,12 @@ export default function FuelLogForm() {
           className="w-full border border-gray-300 rounded-xl px-4 py-4 text-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">-- Pilih Kapal --</option>
-          {boats.map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
+          {boats.map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
-        {errors.boatName && (
-          <p data-error className="text-red-500 text-sm mt-1">{errors.boatName}</p>
-        )}
+        {errors.boatName && <p data-error className="text-red-500 text-sm mt-1">{errors.boatName}</p>}
       </div>
 
-      {/* Depart & Arrival Ports */}
+      {/* Ports */}
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-2">
           Pelabuhan Asal <span className="text-red-500">*</span>
@@ -198,9 +174,7 @@ export default function FuelLogForm() {
           onChange={(e) => set("departPort", e.target.value)}
           className="w-full border border-gray-300 rounded-xl px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        {errors.departPort && (
-          <p data-error className="text-red-500 text-sm mt-1">{errors.departPort}</p>
-        )}
+        {errors.departPort && <p data-error className="text-red-500 text-sm mt-1">{errors.departPort}</p>}
       </div>
 
       <div>
@@ -214,9 +188,7 @@ export default function FuelLogForm() {
           onChange={(e) => set("arrivalPort", e.target.value)}
           className="w-full border border-gray-300 rounded-xl px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        {errors.arrivalPort && (
-          <p data-error className="text-red-500 text-sm mt-1">{errors.arrivalPort}</p>
-        )}
+        {errors.arrivalPort && <p data-error className="text-red-500 text-sm mt-1">{errors.arrivalPort}</p>}
       </div>
 
       {/* Date & Time */}
@@ -230,9 +202,7 @@ export default function FuelLogForm() {
           onChange={(e) => set("loggedAt", e.target.value)}
           className="w-full border border-gray-300 rounded-xl px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        {errors.loggedAt && (
-          <p data-error className="text-red-500 text-sm mt-1">{errors.loggedAt}</p>
-        )}
+        {errors.loggedAt && <p data-error className="text-red-500 text-sm mt-1">{errors.loggedAt}</p>}
       </div>
 
       {/* Liters */}
@@ -250,32 +220,7 @@ export default function FuelLogForm() {
           onChange={(e) => set("liters", e.target.value)}
           className="w-full border border-gray-300 rounded-xl px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        {errors.liters && (
-          <p data-error className="text-red-500 text-sm mt-1">{errors.liters}</p>
-        )}
-      </div>
-
-      {/* Cost IDR */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Biaya BBM (Rp) <span className="text-red-500">*</span>
-        </label>
-        <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-lg">
-            Rp
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="0"
-            value={formatCostDisplay(form.costIdr)}
-            onChange={(e) => set("costIdr", e.target.value.replace(/\D/g, ""))}
-            className="w-full border border-gray-300 rounded-xl pl-12 pr-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        {errors.costIdr && (
-          <p data-error className="text-red-500 text-sm mt-1">{errors.costIdr}</p>
-        )}
+        {errors.liters && <p data-error className="text-red-500 text-sm mt-1">{errors.liters}</p>}
       </div>
 
       {/* Notes */}
