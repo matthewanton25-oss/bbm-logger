@@ -1,5 +1,7 @@
 # ⛽ BBM Logger — Boat Fuel Tracking App
 
+> **Also in this repo:** [`yacht-booking/`](./yacht-booking) — YachtOps, the yacht availability & booking management mobile app (Expo + Supabase).
+
 A mobile-first web app for logging boat fuel (BBM) usage. Captains fill in the form from their phones; admins see a filterable recap dashboard.
 
 ---

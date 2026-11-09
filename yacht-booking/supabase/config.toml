@@ -1,0 +1,35 @@
+# Local development config for `supabase start`.
+project_id = "yachtops"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+
+[db]
+port = 54322
+major_version = 15
+
+[realtime]
+enabled = true
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "yachtops://"
+additional_redirect_urls = ["yachtops://auth-callback", "exp://**", "http://localhost:8081/**"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+double_confirm_changes = true
+
+[functions.invite-member]
+verify_jwt = true
+
+[functions.push-dispatch]
+verify_jwt = false
